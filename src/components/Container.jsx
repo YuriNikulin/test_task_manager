@@ -7,6 +7,7 @@ import PutModal from './PutModal'
 import Pagination from './Pagination'
 import Preloader from './Preloader'
 import AuthModal from './AuthModal'
+import Sort from './Sort'
 
 const Container = (props) => {
     const [{ data, page, loading, currentUser }, dispatch] = useStore()
@@ -65,6 +66,9 @@ const Container = (props) => {
                     >
                         Создать задачу
                     </Button>
+                    <div style={{marginTop: 16}}>
+                        <Sort />
+                    </div>
                 </div>
                 <div className="container body">
                     <TaskList />

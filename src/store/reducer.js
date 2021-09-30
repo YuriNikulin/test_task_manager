@@ -157,6 +157,16 @@ export const reducer = (state = initialState, action) => {
                 currentUser: action.payload || initialState.currentUser
             }
 
+        case TYPES.CHANGE_SORT:
+            const newValue = state.sort.key === action.payload && state.sort.value === 'desc' ? 'asc' : 'desc'
+            return {
+                ...state,
+                sort: {
+                    key: action.payload,
+                    value: newValue
+                }
+            }
+
         default:
             return state
     }

@@ -8,7 +8,6 @@ import Cookies from 'js-cookie'
 
 export const fetchData = (payload) => async (_, dispatch) => {
     const onError = (e) => {
-        console.log(e)
         dispatch({
             type: TYPES.FETCH_DATA_ERROR
         })
@@ -29,6 +28,11 @@ export const fetchData = (payload) => async (_, dispatch) => {
     try {
         const queryParams = {}
         queryParams.page = !options.resetPagination ? state.page : 1
+
+        if (state.sort.key) {
+            queryParams.sort_field = state.sort.key
+            queryParams.sort_direction = state.sort.value
+        }
 
         const res = await request('/', {
             method: 'GET',
@@ -53,6 +57,19 @@ export const togglePutModal = ({ data, show }) => (state, dispatch) => {
             show,
             data
         }
+    })
+}
+
+export const logout = () => (_, dispatch) => {
+    Cookies.remove(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
+    updateCurrentUser()(_, dispatch)
+}
+
+export const toggleAuthModal = (payload) => async (_, dispatch) => {
+    dispatch({
+        type: TYPES.TOGGLE_AUTH_MODAL,
+        payload
     })
 }
 
@@ -108,6 +125,20 @@ export const putTask = ({ data, completed, task }) => async (_, dispatch) => {
             },
             onError: (res) => {
                 onError(res)
+                const isAuthError = 'token' in res
+                let description = 'Не удалось сохранить задачу.'
+                if (isAuthError) {
+                    description += '\nНеобходимо авторизоваться.'
+                }
+                notification.error({
+                    message: `Ошибка`,
+                    description
+                })
+
+                if (isAuthError) {
+                    logout()(_, dispatch)
+                    toggleAuthModal()(_, dispatch)
+                }
             }
         })
     } catch(e) {
@@ -132,11 +163,14 @@ export const changePagination = (payload) => async (_, dispatch) => {
     fetchData({})(_, dispatch)
 }
 
-export const toggleAuthModal = (payload) => async (_, dispatch) => {
+export const changeSort = (payload) => async (_, dispatch) => {
     dispatch({
-        type: TYPES.TOGGLE_AUTH_MODAL,
+        type: TYPES.CHANGE_SORT,
         payload
     })
+
+    await sleep(5)
+    fetchData({})(_, dispatch)
 }
 
 export const updateCurrentUser = () => (_, dispatch) => {
@@ -200,10 +234,4 @@ export const authorize = (payload) => async (_, dispatch) => {
     } catch(e) {
         onError()
     }
-}
-
-export const logout = () => (_, dispatch) => {
-    Cookies.remove(TOKEN_KEY)
-    localStorage.removeItem(USER_KEY)
-    updateCurrentUser()(_, dispatch)
 }
