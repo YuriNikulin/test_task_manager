@@ -78,7 +78,7 @@ const PutModal = () => {
                     value={localValues.text}
                     error={putModal.errors['text']}
                 >
-                    <Input
+                    <Input.TextArea
                         placeholder="Текст задачи"
                     />
                 </CustomFormItem>
