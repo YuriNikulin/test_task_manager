@@ -1,3 +1,6 @@
+import Cookies from "js-cookie";
+import { TOKEN_KEY } from "./constants";
+
 const BASE_URL = 'https://uxcandy.com/~shapoval/test-task-backend/v2'
 
 const request = async (url, params) => {
@@ -41,6 +44,11 @@ const request = async (url, params) => {
                 Object.entries(params.body).forEach(([key, value]) => {
                     body.set(key, value)
                 })
+
+                const token = Cookies.get(TOKEN_KEY)
+                if (token) {
+                    body.set('token', token)
+                }
             }
 
             const res = await fetch(_url, {

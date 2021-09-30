@@ -1,6 +1,7 @@
-import React, { useContext, createContext, useReducer } from 'react';
+import React, { useContext, createContext, useReducer, useEffect } from 'react';
 import { initialState, reducer } from './store/reducer';
 import Container from './components/Container'
+import { updateCurrentUser } from './store/actions';
 
 const AppState = {
     loading: false
@@ -18,6 +19,10 @@ const App = () => {
     }
 
     getState = () => state
+
+    useEffect(() => {
+        _dispatch(updateCurrentUser())
+    }, [])
 
     return (
         <AppStateContext.Provider value={[state, _dispatch]}>

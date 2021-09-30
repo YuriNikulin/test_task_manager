@@ -8,16 +8,26 @@ export const initialState = {
     },
     sort: {},
     page: 1,
+    currentUser: {
+        isLogged: false,
+        username: undefined,
+        isAdmin: undefined
+    },
     putModal: {
         show: false,
-        // data: {},
-        data: {
-            username: 'user',
-            email: 'user@example.com',
-            text: 'some text'
-        },
+        data: {},
+        // data: {
+        //     username: 'user',
+        //     email: 'user@example.com',
+        //     text: 'some text'
+        // },
         errors: {},
         loading: false,
+    },
+    authModal: {
+        show: false,
+        loading: false,
+        errors: {}
     }
 }
 
@@ -70,11 +80,11 @@ export const reducer = (state = initialState, action) => {
             return {
                 ...state,
                 putModal: initialState.putModal,
-                data: {
+                data: action.payload.isEdit ? state.data : {
                     ...state.data,
                     tasks: [
                         ...state.data.tasks,
-                        action.payload
+                        action.payload.response
                     ]
                 }
             }
@@ -92,11 +102,11 @@ export const reducer = (state = initialState, action) => {
         case TYPES.RESET_FIELD_ERROR:
             return {
                 ...state,
-                putModal: {
-                    ...state.putModal,
+                [action.payload.form]: {
+                    ...state[action.payload.form],
                     errors: {
-                        ...state.putModal.errors,
-                        [action.payload]: false
+                        ...state[action.payload.form].errors,
+                        [action.payload.key]: false
                     }
                 }
             }
@@ -105,6 +115,46 @@ export const reducer = (state = initialState, action) => {
             return {
                 ...state,
                 page: action.payload
+            }
+
+        case TYPES.TOGGLE_AUTH_MODAL:
+            return {
+                ...state,
+                authModal: {
+                    ...initialState.authModal,
+                    show: action.payload !== undefined ? action.payload.show : !state.authModal.show
+                }
+            }
+
+        case TYPES.AUTHORIZE_REQUEST:
+            return {
+                ...state,
+                authModal: {
+                    ...state.authModal,
+                    loading: true
+                }
+            }
+
+        case TYPES.AUTHORIZE_SUCCESS:
+            return {
+                ...state,
+                authModal: initialState.authModal
+            }
+
+        case TYPES.AUTHORIZE_ERROR:
+            return {
+                ...state,
+                authModal: {
+                    ...state.authModal,
+                    loading: false,
+                    errors: action.payload || {}
+                }
+            }
+
+        case TYPES.SET_CURRENT_USER:
+            return {
+                ...state,
+                currentUser: action.payload || initialState.currentUser
             }
 
         default:

@@ -1,15 +1,29 @@
 import { useStore } from '../App'
-import { Button } from 'antd'
 import { useCallback, useEffect } from 'react'
-import { fetchData, togglePutModal } from '../store/actions'
+import { fetchData, putTask, togglePutModal } from '../store/actions'
 import Task from './Task'
-import Pagination from './Pagination'
 
 const TaskList = (props) => {
-    const [{ data, loading }, dispatch] = useStore()
+    const [{ data, loading, currentUser }, dispatch] = useStore()
 
     useEffect(() => {
         dispatch(fetchData({}))
+    }, [])
+
+    const handleComplete = useCallback((task, value) => {
+        dispatch(putTask({
+            task,
+            completed: value
+        }))
+    }, [])
+
+    const handleEdit = useCallback((task, key, value) => {
+        dispatch(putTask({
+            task,
+            data: {
+                [key]: value
+            }
+        }))
     }, [])
 
     return (
@@ -20,7 +34,13 @@ const TaskList = (props) => {
                     {
                         data.tasks.map((task) => {
                             return (
-                                <Task task={task} key={task.id} />
+                                <Task
+                                    task={task}
+                                    key={task.id}
+                                    onComplete={(e) => handleComplete(task, e.target.checked)}
+                                    canEdit={currentUser.isAdmin}
+                                    onEdit={(...args) => handleEdit(task, ...args)}
+                                />
                             )
                         })
                     }

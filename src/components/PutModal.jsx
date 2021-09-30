@@ -1,52 +1,24 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Modal, Input, Form } from 'antd'
+import { Input, Form } from 'antd'
 import { useStore } from '../App'
 import { putTask, resetFieldError, togglePutModal } from '../store/actions'
+import CustomFormItem from './FormItem'
+import Modal from './Modal'
 
-const CustomFormItem = ({ onChange, value, ...props }) => {
-    return (
-        <div className="mb-3 form-item">
-            {React.cloneElement(props.children, {
-                onChange: (e) => onChange(props.name, e.target.value),
-                value
-            })}
-            {props.error && (
-                <span className="form-item__error">
-                    {props.error}
-                </span>
-            )}
-        </div>
-    )
-}
 
 const PutModal = () => {
     const [{ putModal }, dispatch] = useStore()
     const [localValues, setLocalValues] = useState({})
 
     const handleSubmit = useCallback(() => {
-        dispatch(putTask(localValues))
+        dispatch(putTask({ data: localValues }))
     }, [localValues])
-
-    const handleWindowKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            handleSubmit()
-        }
-    }
 
     useEffect(() => {
         if (putModal.show) {
-            console.log(putModal)
             setLocalValues(putModal.data)
         }
     }, [putModal.show])
-
-    useEffect(() => {
-        window.addEventListener('keydown', handleWindowKeyDown)
-
-        return () => {
-            window.removeEventListener('keydown', handleWindowKeyDown)
-        }
-    }, [handleWindowKeyDown])
 
     const handleCancel = useCallback(() => {
         dispatch(togglePutModal({
@@ -61,7 +33,10 @@ const PutModal = () => {
         })
 
         if (putModal.errors[key]) {
-            dispatch(resetFieldError(key))
+            dispatch(resetFieldError({
+                form: 'putModal',
+                key
+            }))
         }
     }, [localValues, putModal.errors])
 

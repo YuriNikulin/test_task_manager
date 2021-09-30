@@ -2,7 +2,9 @@ import * as TYPES from './types'
 import request from '../api'
 import { getState } from '../App'
 import { notification } from 'antd'
-import { sleep } from '../utils'
+import { defineNewStatus, isAdmin, sleep } from '../utils'
+import { TASK_STATUS, TOKEN_KEY, USER_KEY } from '../constants'
+import Cookies from 'js-cookie'
 
 export const fetchData = (payload) => async (_, dispatch) => {
     const onError = (e) => {
@@ -54,7 +56,7 @@ export const togglePutModal = ({ data, show }) => (state, dispatch) => {
     })
 }
 
-export const putTask = (payload) => async (_, dispatch) => {
+export const putTask = ({ data, completed, task }) => async (_, dispatch) => {
     dispatch({
         type: TYPES.PUT_TASK_REQUEST
     })
@@ -66,19 +68,43 @@ export const putTask = (payload) => async (_, dispatch) => {
         })
     }
 
+    const isEdit = task !== undefined
+    let url = isEdit ? `/edit/${task.id}` : '/create'
+    let _data = data
+
+    if (isEdit) {
+        if (completed !== undefined) {
+            _data = {
+                status: defineNewStatus({ task, completed })
+            }
+        } else {
+            _data = {
+                ...data,
+                status: defineNewStatus({ task, edited: true })
+            }
+        }
+    }
+
     try {
-        const res = await request('/create', {
-            body: payload,
+        const res = await request(url, {
+            body: _data,
             method: 'POST',
             onSuccess: (res) => {
                 dispatch({
                     type: TYPES.PUT_TASK_SUCCESS,
-                    payload: res
+                    payload: {
+                        response: res,
+                        isEdit
+                    }
                 })
                 notification.success({
-                    message: 'Добавление задачи',
-                    description: 'Задача успешно добавлена'
+                    message: `${isEdit ? 'Редактирование' : 'Создание'} задачи`,
+                    description: `Задача успешно ${isEdit ? 'отредактирована' : 'создана'}`
                 })
+
+                if (isEdit) {
+                    fetchData({})(_, dispatch)
+                }
             },
             onError: (res) => {
                 onError(res)
@@ -104,4 +130,80 @@ export const changePagination = (payload) => async (_, dispatch) => {
 
     await sleep(5)
     fetchData({})(_, dispatch)
+}
+
+export const toggleAuthModal = (payload) => async (_, dispatch) => {
+    dispatch({
+        type: TYPES.TOGGLE_AUTH_MODAL,
+        payload
+    })
+}
+
+export const updateCurrentUser = () => (_, dispatch) => {
+    try {
+        const user = JSON.parse(localStorage.getItem(USER_KEY))
+        if (user) {
+            dispatch({
+                type: TYPES.SET_CURRENT_USER,
+                payload: {
+                    ...user,
+                    isAdmin: isAdmin(user),
+                    isLogged: true
+                }
+            })
+        } else {
+            throw new Error()
+        }
+    } catch(e) {
+        dispatch({
+            type: TYPES.SET_CURRENT_USER,
+            payload: null
+        })
+    }
+}
+
+export const authorize = (payload) => async (_, dispatch) => {
+    dispatch({
+        type: TYPES.AUTHORIZE_REQUEST
+    })
+
+    const onError = (payload) => {
+        dispatch({
+            type: TYPES.AUTHORIZE_ERROR,
+            payload
+        })
+    }
+
+    try {
+        await request('/login', {
+            body: payload.data,
+            method: 'POST',
+            onSuccess: (res) => {
+                dispatch({
+                    type: TYPES.AUTHORIZE_SUCCESS,
+                    payload: res
+                })
+                notification.success({
+                    message: 'Авторизация',
+                    description: 'Авторизация успешно выполнена'
+                })
+                localStorage.setItem(USER_KEY, JSON.stringify({
+                    username: payload.data.username
+                }))
+                Cookies.set(TOKEN_KEY, res.token)
+                updateCurrentUser()(_, dispatch)
+            },
+            onError: (res) => {
+                onError(res)
+            }
+        })
+    } catch(e) {
+        onError()
+    }
+}
+
+export const logout = () => (_, dispatch) => {
+    Cookies.remove(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
+    updateCurrentUser()(_, dispatch)
 }
